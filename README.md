@@ -1,0 +1,2 @@
+# StrukturData
+ College Purpose
