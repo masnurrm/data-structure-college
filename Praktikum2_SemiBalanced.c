@@ -207,7 +207,9 @@ void bst_preorder(BST *bst) {
  
 void midAscending(BST *bst, long long arr[], int start, int end){
     int mid;
-    if(end<start){return;};
+    if(end<start){
+        return;
+    }
 
     if((start+end)%2==0) {
         mid = (start+end)/2;
@@ -224,7 +226,9 @@ void midAscending(BST *bst, long long arr[], int start, int end){
 
 void midDescending(BST *bst, long long arr[], int start, int end){
     int mid;
-    if(end<start){return;};
+    if(end<start){
+        return;
+    }
         
     if((start+end)%2==0) {
         mid = (start+end)/2;
