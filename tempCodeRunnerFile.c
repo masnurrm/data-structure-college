@@ -1,156 +1,295 @@
+// ========[AVL Tree]======== //
+/*
+    Dibuat dan ditulis oleh ABDUR ROCHMAN
+    28-03-2020
+    Struktur Data 2020
+    For C
+*/
 
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-/**
- * Node structure and
- * uniqueBST structure
- */
 
-typedef struct bstnode_t {
-    int key;
-    char nama[12];
-    struct bstnode_t \
-        *left, *right, *parent;
-} BSTNode;
+typedef struct AVLNode_t {
+    long long data;
+    struct AVLNode_t *left,*right;
+    int height;
+} AVLNode;
 
-typedef struct bst_t {
-    BSTNode *_root;
+typedef struct AVL_t {
+    AVLNode *_root;
     unsigned int _size;
-} BST;
+} AVL;
 
-/**
- * !!! WARNING UTILITY FUNCTION !!!
- * Recognized by prefix "__bst__"
- * ---------------------------------------------
- * Note that you better never access these functions, 
- * unless you need to modify or you know how these functions work.
- */
-
-BSTNode* __bst__createNode(BSTNode*parent, int value, char nama[]) {
-    BSTNode *newNode = (BSTNode*) malloc(sizeof(BSTNode));
-    newNode->key = value;
-    strcpy(newNode->nama, nama);
-    newNode->left = newNode->right = NULL;
-    newNode->parent = parent;
+AVLNode* _avl_createNode(long long value) {
+    AVLNode *newNode = (AVLNode*) malloc(sizeof(AVLNode));
+    newNode -> data = value;
+    newNode -> height = 1;
+    newNode -> left = newNode -> right = NULL;
     return newNode;
 }
 
-BSTNode* __bst__insert(BSTNode *root, BSTNode *parent, int value, char nama[]) {
-    if (root == NULL) 
-        return __bst__createNode(parent, value, nama);
-
-    if (value < root->key)
-        root->left = __bst__insert(root->left, root, value, nama);
-    else if (value > root->key)
-        root->right = __bst__insert(root->right, root, value, nama);
-    return root;
-}
-
-BSTNode* __bst__search(BSTNode *root, int value) {
+AVLNode* _search(AVLNode *root, long long value) {
     while (root != NULL) {
-        if (value < root->key)
-            root = root->left;
-        else if (value > root->key)
-            root = root->right;
-        else
+        if (value < root -> data) {
+            root = root -> left;
+        }
+        else if (value > root -> data) {
+            root = root -> right;
+        }
+        else {
             return root;
+        }
     }
     return root;
 }
 
-/**
- * PRIMARY FUNCTION
- * ---------------------------
- * Accessible and safe to use.
- */
-
-void bst_init(BST *bst) {
-    bst->_root = NULL;
-    bst->_size = 0u;
+int _getHeight(AVLNode* node) {
+    if(node == NULL) {
+        return 0;
+    } 
+    return node -> height;
 }
 
-bool bst_isEmpty(BST *bst) {
-    return bst->_root == NULL;
+int _max(int a, int b) {
+    return (a > b) ? a : b;
 }
 
-bool bst_find(BST *bst, int value) {
-    BSTNode *temp = __bst__search(bst->_root, value);
+AVLNode* _rightRotate(AVLNode* pivotNode) {
+
+    AVLNode* newParrent = pivotNode -> left;
+    pivotNode -> left = newParrent -> right;
+    newParrent -> right = pivotNode;
+
+    pivotNode -> height = _max(_getHeight(pivotNode -> left),
+                      _getHeight(pivotNode -> right)) + 1;
+    newParrent -> height=_max(_getHeight(newParrent -> left),
+                       _getHeight(newParrent -> right)) + 1;
+    
+    return newParrent;
+}
+
+AVLNode* _leftRotate(AVLNode* pivotNode) {
+    AVLNode* newParrent = pivotNode -> right;
+    pivotNode -> right = newParrent -> left;
+    newParrent -> left = pivotNode;
+
+    pivotNode->height = _max(_getHeight(pivotNode -> left),
+                      _getHeight(pivotNode -> right)) + 1;
+    newParrent->height = _max(_getHeight(newParrent -> left),
+                       _getHeight(newParrent -> right)) + 1;
+
+    return newParrent;
+}
+
+AVLNode* _leftCaseRotate(AVLNode* node) {
+    return _rightRotate(node);
+}
+
+AVLNode* _rightCaseRotate(AVLNode* node) {
+    return _leftRotate(node);
+}
+
+AVLNode* _leftRightCaseRotate(AVLNode* node) {
+    node -> left = _leftRotate(node -> left);
+    return _rightRotate(node);
+}
+
+AVLNode* _rightLeftCaseRotate(AVLNode* node) {
+    node -> right = _rightRotate(node -> right);
+    return _leftRotate(node);
+}
+
+int _getBalanceFactor(AVLNode* node) {
+    if(node == NULL) {
+        return 0;
+    }
+    return _getHeight(node -> left)-_getHeight(node -> right);
+}
+
+AVLNode* _insert_AVL(AVL *avl, AVLNode* node, long long value) {
+    
+    if(node == NULL) // udah mencapai leaf
+        return _avl_createNode(value);
+    if(value < node -> data)
+        node -> left = _insert_AVL(avl, node -> left, value);
+    else if(value > node -> data)
+    	node -> right = _insert_AVL(avl, node -> right, value);
+    
+    node->height= 1 + _max(_getHeight(node -> left), _getHeight(node -> right)); 
+
+    int balanceFactor = _getBalanceFactor(node);
+    
+    if(balanceFactor > 1 && value < node -> left -> data) // skewed kiri (left-left case)
+        return _leftCaseRotate(node);
+    if(balanceFactor > 1 && value > node -> left -> data) // 
+		return _leftRightCaseRotate(node);
+    if(balanceFactor < -1 && value > node -> right -> data)
+        return _rightCaseRotate(node);
+    if(balanceFactor < -1 && value < node -> right -> data)
+        return _rightLeftCaseRotate(node);
+    
+    return node;
+}
+
+AVLNode* _findMinNode(AVLNode *node) {
+    AVLNode *currNode = node;
+    while (currNode && currNode -> left != NULL)
+        currNode = currNode -> left;
+    return currNode;
+}
+
+AVLNode* _remove_AVL(AVLNode* node, long long value) {
+    if(node == NULL)
+        return node;
+    if(value > node->data)
+    	node -> right = _remove_AVL(node -> right, value);
+    else if(value < node -> data)
+    	node -> left = _remove_AVL(node -> left, value);
+    else{
+        AVLNode *temp;
+        if((node -> left == NULL) || (node -> right == NULL)) {
+            temp = NULL;
+            if(node -> left == NULL) temp = node -> right;  
+            else if(node -> right == NULL) temp = node -> left;
+            
+            if(temp == NULL){
+                temp = node;
+                node = NULL;
+            }
+            else
+                *node = *temp;   
+            
+            free(temp);
+        }
+        else{
+            temp = _findMinNode(node -> right);
+            node -> data = temp -> data;
+            node -> right = _remove_AVL(node -> right, temp -> data);
+        }    
+    }
+
+	if(node == NULL) return node;
+    
+    node -> height=_max(_getHeight(node->left), _getHeight(node->right)) + 1;
+
+    int balanceFactor = _getBalanceFactor(node);
+    
+    if(balanceFactor > 1 && _getBalanceFactor(node -> left) >= 0) 
+        return _leftCaseRotate(node);
+
+    if(balanceFactor > 1 && _getBalanceFactor(node -> left) < 0) 
+        return _leftRightCaseRotate(node);
+  
+    if(balanceFactor < -1 && _getBalanceFactor(node -> right) <= 0) 
+        return _rightCaseRotate(node);
+
+    if(balanceFactor < -1 && _getBalanceFactor(node -> right) > 0) 
+        return _rightLeftCaseRotate(node);
+    
+    return node;
+}
+
+void avl_init(AVL *avl) {
+    avl -> _root = NULL;
+    avl -> _size = 0u;
+}
+
+bool avl_isEmpty(AVL *avl) {
+    return avl -> _root == NULL;
+}
+
+bool avl_find(AVL *avl, long long value) {
+    AVLNode *temp = _search(avl -> _root, value);
     if (temp == NULL)
         return false;
     
-    if (temp->key == value)
+    if (temp -> data == value)
         return true;
     else
         return false;
 }
 
-void bst_insert(BST *bst, int value, char nama[]) {
-    if (!bst_find(bst, value)) {
-        bst->_root = __bst__insert(bst->_root, NULL, value, nama);
-        bst->_size++;
+void avl_insert(AVL *avl, long long value) {
+    if(!avl_find(avl, value)){
+        avl -> _root = _insert_AVL(avl, avl -> _root, value);
+        avl -> _size++;
+    }
+
+}
+
+void avl_remove(AVL *avl, long long value) {
+    if(avl_find(avl, value)){
+        avl -> _root = _remove_AVL(avl -> _root, value);
+        avl -> _size--;
+    }
+
+}
+
+void preorder(AVLNode *root) {
+    if (root) {
+        printf("%lld ", root -> data);
+        preorder(root -> left);
+        preorder(root -> right);
     }
 }
 
-BSTNode *bst_find2(BST *bst, int value) {
-    BSTNode *temp = __bst__search(bst->_root, value);
-    return temp;
-}
-
-
-int main()
-{
-    BST set;
-    bst_init(&set);
-    BSTNode *temp; // buat store node yang telah dicari
-    int n, key;
-    scanf("%d",&n);
-    char command[10], nama[10];
-    while(n--){
-        scanf("%s", command);
-        if(command[0] == 'a'){
-            scanf("%d %s", &key, nama);
-            if(bst_find(&set, key) == 1){
-                printf("NomorID udah ada\n");
-            }
-            else bst_insert(&set, key, nama);
-        }
-        else if(command[0] == 'c'){
-            scanf("%d",&key);
-            temp = bst_find2(&set, key);
-            if(temp == NULL){
-                printf("hmmm\n");
-                continue;
-            }
-            if(temp->left == NULL) {
-                printf("NULL ");
-            }
-            else {
-                printf("%s ", temp->left->nama);
-            }
-            if(temp->right == NULL){
-                printf("NULL\n");
-            }
-            else {
-                printf("%s\n",temp->right->nama);
-            }
-        }
-        else{
-            scanf("%d", &key);
-            temp = bst_find2(&set, key);
-            if(temp == NULL){
-                printf("hmmm\n");
-                continue;
-            }
-            if(temp->parent == NULL){
-                printf("NULL\n");
-            }
-            else{
-                printf("%s\n", temp->parent->nama);
-            }
-        }
+void postorder(AVLNode *root) {
+    if (root) {
+        postorder(root -> left);
+        postorder(root -> right);
+        printf("%lld ", root -> data);
     }
-    return 0;
 }
 
+long long sum = 0;
+void nodeSumHeight(AVLNode *root, int value) {
+    if (root) {
+        nodeSumHeight(root -> left, value);
+        if(root -> height == value) {
+            sum += root -> data;
+        }
+        nodeSumHeight(root -> right, value);
+    }
+}
+
+void nodeBasedHeight(AVLNode *root, int value) {
+    if (root) {
+        nodeBasedHeight(root -> left, value);
+        if(root -> height == value) {
+            printf("%lld ", root -> data);
+        }
+        nodeBasedHeight(root -> right, value);
+    }
+}
+
+int main() {
+    AVL avlku;
+    avl_init(&avlku);
+
+    int Q, cmd;
+    long long x;
+    scanf("%d", &Q);
+    for(int i = 0; i < Q; i++) {
+        scanf("%d", &cmd);
+        if(cmd == 1) {
+            scanf("%lld", &x);
+            avl_insert(&avlku, x);
+        }
+        else if(cmd == 2) {
+            scanf("%lld", &x);
+            int totalHeight = _getHeight(avlku._root);
+            x = totalHeight - (x - 1);
+            // printf("%d ", x);
+            nodeBasedHeight(avlku._root, x);
+            puts("");
+        }
+        else if(cmd == 3) {
+            nodeSumHeight(avlku._root, x);
+            printf("%lld", sum);
+            puts("");
+        }
+        sum = 0;
+    }
+}
